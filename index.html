@@ -62,41 +62,8 @@
     <section class="section alt">
       <div class="container">
         <h2>Real-world evidence examples</h2>
-        <p class="micro">Examples of the kind of activity records and sightings Pest Intel workflows are built around.</p>
-        <div class="evidence-grid">
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-mice-food.jpg" alt="Mice contaminating food surfaces" loading="lazy" data-caption="Food-risk evidence: contamination risk requiring immediate escalation" />
-            <figcaption class="micro">Food-risk evidence: contamination risk requiring immediate escalation</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-bait-nibbled.jpg" alt="Bait nibbled by mice" loading="lazy" data-caption="Monitoring point evidence: bait nibbled by mice (activity confirmed)" />
-            <figcaption class="micro">Monitoring point evidence: bait nibbled by mice (activity confirmed)</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-camera-loft.jpg" alt="Rodent captured on internal monitoring camera" loading="lazy" data-caption="Internal monitoring: camera capture in concealed roof/void area" />
-            <figcaption class="micro">Internal monitoring: camera capture in concealed roof/void area</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-smear-marks-wall.jpg" alt="Smear marks from rats behind plasterboard kitchen wall" loading="lazy" data-caption="Run-mark evidence: smear marks from rats passing behind plasterboard wall" />
-            <figcaption class="micro">Run-mark evidence: smear marks behind plasterboard kitchen wall</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-droppings-kitchen.jpg" alt="Mouse droppings under kitchen units" loading="lazy" data-caption="Internal activity evidence: mouse droppings under kitchen units" />
-            <figcaption class="micro">Internal activity evidence: mouse droppings under kitchen units</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-green-droppings-bait.jpg" alt="Green mouse droppings after bait consumption" loading="lazy" data-caption="Bait-take evidence: green droppings showing mice have consumed treatment bait" />
-            <figcaption class="micro">Bait-take evidence: green droppings after bait consumption</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-fly-killer-board.jpg" alt="Heavy insect catch on fly killer sticky board" loading="lazy" data-caption="Flying insect evidence: heavy catch count on UV glue board (service/replacement due)" />
-            <figcaption class="micro">Flying insect evidence: heavy catch on UV glue board (replacement due)</figcaption>
-          </figure>
-          <figure class="card evidence-card">
-            <img class="evidence-trigger" src="/assets/evidence-rat-garden.jpg" alt="Rat activity in external environment" loading="lazy" data-caption="External activity evidence: ground-level rodent movement" />
-            <figcaption class="micro">External activity evidence: ground-level rodent movement</figcaption>
-          </figure>
-        </div>
+        <p class="micro">Examples of the kind of activity records and sightings Pest Intel workflows are built around. Showing 3 at a time and rotating automatically.</p>
+        <div class="evidence-grid" id="evidenceGrid"></div>
       </div>
     </section>
 
@@ -375,21 +342,81 @@
       const lightboxImage = document.getElementById('lightboxImage');
       const lightboxCaption = document.getElementById('lightboxCaption');
       const closeBtn = document.getElementById('lightboxClose');
-      const triggers = Array.from(document.querySelectorAll('.evidence-trigger'));
+      const evidenceGrid = document.getElementById('evidenceGrid');
+
+      const evidencePool = [
+        {
+          src: '/assets/evidence-mice-food.jpg',
+          alt: 'Mice contaminating food surfaces',
+          caption: 'Food-risk evidence: contamination risk requiring immediate escalation'
+        },
+        {
+          src: '/assets/evidence-bait-nibbled.jpg',
+          alt: 'Bait nibbled by mice',
+          caption: 'Monitoring point evidence: bait nibbled by mice (activity confirmed)'
+        },
+        {
+          src: '/assets/evidence-camera-loft.jpg',
+          alt: 'Rodent captured on internal monitoring camera',
+          caption: 'Internal monitoring: camera capture in concealed roof/void area'
+        },
+        {
+          src: '/assets/evidence-smear-marks-wall.jpg',
+          alt: 'Smear marks from rats behind plasterboard kitchen wall',
+          caption: 'Run-mark evidence: smear marks behind plasterboard kitchen wall'
+        },
+        {
+          src: '/assets/evidence-droppings-kitchen.jpg',
+          alt: 'Mouse droppings under kitchen units',
+          caption: 'Internal activity evidence: mouse droppings under kitchen units'
+        },
+        {
+          src: '/assets/evidence-green-droppings-bait.jpg',
+          alt: 'Green mouse droppings after bait consumption',
+          caption: 'Bait-take evidence: green droppings after bait consumption'
+        },
+        {
+          src: '/assets/evidence-fly-killer-board.jpg',
+          alt: 'Heavy insect catch on fly killer sticky board',
+          caption: 'Flying insect evidence: heavy catch on UV glue board (replacement due)'
+        },
+        {
+          src: '/assets/evidence-rat-garden.jpg',
+          alt: 'Rat activity in external environment',
+          caption: 'External activity evidence: ground-level rodent movement'
+        }
+      ];
+
+      let evidenceStart = 0;
+      function renderEvidence() {
+        const visible = [0, 1, 2].map(i => evidencePool[(evidenceStart + i) % evidencePool.length]);
+        evidenceGrid.innerHTML = visible.map(item => `
+          <figure class="card evidence-card">
+            <img class="evidence-trigger" src="${item.src}" alt="${item.alt}" loading="lazy" data-caption="${item.caption}" />
+            <figcaption class="micro">${item.caption}</figcaption>
+          </figure>
+        `).join('');
+      }
 
       function closeLightbox() {
         lightbox.classList.remove('open');
         lightbox.setAttribute('aria-hidden', 'true');
       }
 
-      triggers.forEach(img => {
-        img.addEventListener('click', () => {
-          lightboxImage.src = img.src;
-          lightboxCaption.textContent = img.dataset.caption || '';
-          lightbox.classList.add('open');
-          lightbox.setAttribute('aria-hidden', 'false');
-        });
+      evidenceGrid.addEventListener('click', (e) => {
+        const img = e.target.closest('.evidence-trigger');
+        if (!img) return;
+        lightboxImage.src = img.src;
+        lightboxCaption.textContent = img.dataset.caption || '';
+        lightbox.classList.add('open');
+        lightbox.setAttribute('aria-hidden', 'false');
       });
+
+      renderEvidence();
+      setInterval(() => {
+        evidenceStart = (evidenceStart + 1) % evidencePool.length;
+        renderEvidence();
+      }, 6000);
 
       closeBtn.addEventListener('click', closeLightbox);
       lightbox.addEventListener('click', (e) => {
