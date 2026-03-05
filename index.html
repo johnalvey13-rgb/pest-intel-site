@@ -92,18 +92,50 @@
     <section id="pricing" class="section">
       <div class="container">
         <h2>Simple pricing by site size</h2>
-        <div class="cards-4">
-          <article class="price-card">
+        <div class="cards-4" id="planCards">
+          <article class="price-card selectable" data-plan="small" tabindex="0" role="button" aria-pressed="false">
             <h3>Small</h3><p>0–250 m² • takeaways, small cafés</p><p class="price">£9/mo <span>months 1–3</span></p><p>Then £19/mo • Setup £99</p>
+            <div class="price-detail">
+              <p><strong>Starter setup includes:</strong></p>
+              <ul>
+                <li>2 external rat bait stations</li>
+                <li>8 internal mouse monitors</li>
+                <li>2 insect monitors</li>
+              </ul>
+            </div>
           </article>
-          <article class="price-card featured">
+          <article class="price-card selectable featured" data-plan="medium" tabindex="0" role="button" aria-pressed="true">
             <h3>Medium</h3><p>250–1,000 m² • restaurants, schools</p><p class="price">£19/mo <span>months 1–3</span></p><p>Then £39/mo • Setup £179</p>
+            <div class="price-detail open">
+              <p><strong>Starter setup includes:</strong></p>
+              <ul>
+                <li>4 external rat bait stations</li>
+                <li>16 internal mouse monitors</li>
+                <li>4 insect monitors</li>
+              </ul>
+            </div>
           </article>
-          <article class="price-card">
+          <article class="price-card selectable" data-plan="large" tabindex="0" role="button" aria-pressed="false">
             <h3>Large</h3><p>1,000–5,000 m² • hotels, care homes</p><p class="price">£39/mo <span>months 1–3</span></p><p>Then £79/mo • Setup £349</p>
+            <div class="price-detail">
+              <p><strong>Starter setup includes:</strong></p>
+              <ul>
+                <li>8 external rat bait stations</li>
+                <li>32 internal mouse monitors</li>
+                <li>8 insect monitors</li>
+              </ul>
+            </div>
           </article>
-          <article class="price-card">
+          <article class="price-card selectable" data-plan="enterprise" tabindex="0" role="button" aria-pressed="false">
             <h3>Enterprise</h3><p>5,000+ m²</p><p class="price">Custom</p><p>Custom onboarding and support</p>
+            <div class="price-detail">
+              <p><strong>Enterprise setup:</strong></p>
+              <ul>
+                <li>Custom equipment schedule by risk map</li>
+                <li>Multi-zone monitoring strategy</li>
+                <li>Dedicated onboarding and escalation plan</li>
+              </ul>
+            </div>
           </article>
         </div>
         <p class="micro">12-month minimum term. Cancellation takes effect at the end of the minimum term with 30 days’ notice.</p>
@@ -198,5 +230,32 @@
   </footer>
 
   <a class="mobile-cta" href="#lead">Get My Site Plan</a>
+
+  <script>
+    (function () {
+      const cards = Array.from(document.querySelectorAll('.price-card.selectable'));
+      function activate(card) {
+        cards.forEach(c => {
+          c.classList.remove('featured');
+          c.setAttribute('aria-pressed', 'false');
+          const d = c.querySelector('.price-detail');
+          if (d) d.classList.remove('open');
+        });
+        card.classList.add('featured');
+        card.setAttribute('aria-pressed', 'true');
+        const detail = card.querySelector('.price-detail');
+        if (detail) detail.classList.add('open');
+      }
+      cards.forEach(card => {
+        card.addEventListener('click', () => activate(card));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            activate(card);
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -8,7 +8,7 @@ nav{display:flex;gap:14px;align-items:center}nav a{font-size:14px;color:#374151}
 .section{padding:64px 0}.alt{background:#f8fafc}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 .card-list{display:grid;gap:12px}.card{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
-.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.cards-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.price-card{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}.featured{border-color:#0f766e;box-shadow:0 0 0 1px #0f766e inset}.stat h3{margin:0 0 4px;font-size:24px;color:#0f766e}
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.cards-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.price-card{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}.price-card.selectable{cursor:pointer;transition:border-color .2s ease, box-shadow .2s ease}.price-card.selectable:focus{outline:2px solid #0f766e;outline-offset:2px}.featured{border-color:#0f766e;box-shadow:0 0 0 1px #0f766e inset}.price-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #d1d5db}.price-detail.open{display:block}.price-detail ul{margin:6px 0 0 18px;padding:0}.stat h3{margin:0 0 4px;font-size:24px;color:#0f766e}
 .price{font-size:28px;font-weight:800}.price span{font-size:12px;font-weight:500;color:#6b7280}
 .btn{display:inline-block;background:#0f766e;color:#fff;padding:11px 16px;border-radius:10px;border:1px solid #0f766e;font-weight:600}
 .btn-outline{background:#fff;color:#0f766e}.btn-sm{padding:8px 12px;font-size:13px}
