@@ -304,12 +304,14 @@ app.get('/api/onboarding-assessments', requireAdmin, (_, res) => {
 // Client activity logging (foundation for app workflow)
 app.post('/api/activity', (req, res) => {
   const body = req.body || {};
-  if (!body.siteName || !body.location || !body.findingType) {
-    return res.status(400).json({ error: 'siteName, location, findingType are required' });
+  const monitoringPointName = (body.monitoringPointName || body.monitoringPoint || '').toString().trim();
+  const effectiveLocation = (body.location || monitoringPointName || '').toString().trim();
+
+  if (!body.siteName || !effectiveLocation || !body.findingType) {
+    return res.status(400).json({ error: 'siteName, bait point/location, findingType are required' });
   }
 
   const site = getOrCreateSite(body.siteName);
-  const monitoringPointName = (body.monitoringPointName || body.monitoringPoint || '').toString().trim();
   let monitoringPoint = null;
   if (monitoringPointName) {
     monitoringPoint = upsertMonitoringPoint(site.siteName, monitoringPointName, body.monitoringPointType || 'general');
@@ -323,6 +325,7 @@ app.post('/api/activity', (req, res) => {
     status: 'logged',
     source: body.source || 'client-app',
     ...body,
+    location: effectiveLocation,
     siteId: site?.id || null,
     monitoringPointId: monitoringPoint?.id || null,
     monitoringPointName: monitoringPoint?.name || monitoringPointName || null,

@@ -46,7 +46,7 @@
 
     <div class="big-actions">
       <button class="big-btn" onclick="scrollToPanel('onboardingPanel')">Start site setup walkthrough<small>Identify risks before placing points</small></button>
-      <button class="big-btn" onclick="scrollToPanel('setupPanel')">Setup monitoring points<small>Name all bait/trap/monitor points once</small></button>
+      <button class="big-btn" onclick="scrollToPanel('setupPanel')">Setup bait points<small>Name each point as area + location once</small></button>
       <button class="big-btn" onclick="scrollToPanel('logPanel')">Log activity<small>Photo + point + what was found</small></button>
       <button class="big-btn" onclick="scrollToPanel('checkPanel')">Run monthly check<small>Guided checklist with timestamps</small></button>
       <button class="big-btn" onclick="scrollToPanel('helpPanel')">Need help now<small>Escalate to professional support</small></button>
@@ -108,13 +108,13 @@
     </section>
 
     <section class="panel" id="setupPanel">
-      <h3>Setup monitoring points</h3>
+      <h3>Setup bait points</h3>
       <form id="setupForm" class="stack">
         <label>Site name
           <input id="setupSiteName" name="siteName" required value="Demo Site" />
         </label>
-        <label>Monitoring points (one per line)
-          <textarea id="setupPoints" name="pointsRaw" placeholder="Kitchen station 1&#10;Rear yard bait box A&#10;Loft monitor 2"></textarea>
+        <label>Bait points (name + location, one per line)
+          <textarea id="setupPoints" name="pointsRaw" placeholder="Kitchen - Under sink&#10;Rear yard - Bait box A&#10;Loft - Near hatch"></textarea>
         </label>
         <button class="btn" type="submit">Save monitoring points</button>
       </form>
@@ -127,14 +127,13 @@
         <label>Site name
           <input name="siteName" required value="Demo Site" />
         </label>
-        <label>Monitoring point
+        <label>Bait point (name + location)
           <select id="activityPoint" name="monitoringPointName" required>
-            <option value="" selected disabled>Select monitoring point</option>
+            <option value="" selected disabled>Select bait point</option>
           </select>
         </label>
-        <label>Location / area
-          <input name="location" required placeholder="e.g. under prep sink" />
-        </label>
+        <button class="btn" id="startCycleBtn" type="button">Start full point cycle</button>
+        <p class="status" id="cycleStatus">Cycle not started.</p>
         <label>Finding type
           <select name="findingType" required>
             <option value="" selected disabled>Select finding</option>
@@ -199,6 +198,12 @@
     const setupSiteName = document.getElementById('setupSiteName');
     const onboardingSiteName = document.getElementById('onboardingSiteName');
     const activityPoint = document.getElementById('activityPoint');
+    const startCycleBtn = document.getElementById('startCycleBtn');
+    const cycleStatus = document.getElementById('cycleStatus');
+
+    let cycleActive = false;
+    let cyclePoints = [];
+    let cycleDone = new Set();
 
     document.getElementById('easyMode').addEventListener('change', (e) => {
       shell.classList.toggle('easy', e.target.checked);
@@ -233,9 +238,49 @@
     function renderPointOptions(points = []) {
       const clean = points.filter(Boolean);
       activityPoint.innerHTML = [
-        '<option value="" selected disabled>Select monitoring point</option>',
+        '<option value="" selected disabled>Select bait point</option>',
         ...clean.map((p) => `<option>${typeof p === 'string' ? p : p.name}</option>`)
       ].join('');
+    }
+
+    function updateCycleStatus(message = '') {
+      if (message) {
+        cycleStatus.textContent = message;
+        return;
+      }
+      if (!cycleActive) {
+        cycleStatus.textContent = 'Cycle not started.';
+        return;
+      }
+      cycleStatus.textContent = `Point cycle: ${cycleDone.size}/${cyclePoints.length} completed.`;
+    }
+
+    function startPointCycle() {
+      cyclePoints = Array.from(activityPoint.options)
+        .map(o => o.value)
+        .filter(Boolean);
+
+      if (!cyclePoints.length) {
+        updateCycleStatus('No bait points available yet. Add points first.');
+        return;
+      }
+
+      cycleActive = true;
+      cycleDone = new Set();
+      activityPoint.value = cyclePoints[0];
+      updateCycleStatus();
+    }
+
+    function moveToNextCyclePoint() {
+      if (!cycleActive) return;
+      const remaining = cyclePoints.filter(p => !cycleDone.has(p));
+      if (!remaining.length) {
+        cycleActive = false;
+        updateCycleStatus('Cycle complete: all bait points logged for this visit.');
+        return;
+      }
+      activityPoint.value = remaining[0];
+      updateCycleStatus();
     }
 
     async function loadPointsForSite(siteName) {
@@ -284,6 +329,8 @@
       return { stage, riskScore, actions };
     }
 
+    startCycleBtn.addEventListener('click', startPointCycle);
+
     setupSiteName.addEventListener('change', () => {
       syncSiteName(setupSiteName.value);
       loadPointsForSite(setupSiteName.value);
@@ -328,13 +375,15 @@
       const siteName = (form.siteName || '').trim();
       const points = (form.pointsRaw || '').split('\n').map(x => x.trim()).filter(Boolean);
       if (!siteName || !points.length) {
-        status.textContent = 'Please enter site name and at least one monitoring point.';
+        status.textContent = 'Please enter site name and at least one bait point.';
         return;
       }
 
       syncSiteName(siteName);
       saveLocalPoints(siteName, points);
       renderPointOptions(points);
+      cycleActive = false;
+      updateCycleStatus('Cycle reset. Press "Start full point cycle" for this visit.');
 
       if (!API_BASE) {
         status.textContent = `Saved ${points.length} points for ${siteName} (preview mode).`;
@@ -352,7 +401,9 @@
         const names = (data.monitoringPoints || []).map(p => p.name);
         saveLocalPoints(siteName, names);
         renderPointOptions(names);
-        status.textContent = `Saved. ${data.pointsTotal} monitoring points now stored for ${siteName}.`;
+        cycleActive = false;
+        updateCycleStatus('Cycle reset. Press "Start full point cycle" for this visit.');
+        status.textContent = `Saved. ${data.pointsTotal} bait points now stored for ${siteName}.`;
       } catch (err) {
         status.textContent = `Could not save setup: ${err.message}`;
       }
@@ -362,30 +413,38 @@
       e.preventDefault();
       const status = document.getElementById('activityStatus');
       const body = Object.fromEntries(new FormData(activityForm).entries());
+      const submittedPoint = body.monitoringPointName;
+      body.location = body.location || body.monitoringPointName;
       status.textContent = 'Submitting...';
 
       try {
         if (!API_BASE) {
           status.textContent = 'Preview mode: captured successfully (API not configured on this page).';
-          activityForm.reset();
-          syncSiteName(setupSiteName.value || 'Demo Site');
-          return;
+        } else {
+          const r = await fetch(`${API_BASE}/api/activity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || 'Failed');
+
+          status.textContent = data.triageCreated
+            ? `Logged. Auto-triage case created (#${data.triageId}).`
+            : 'Logged successfully.';
         }
 
-        const r = await fetch(`${API_BASE}/api/activity`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Failed');
+        if (cycleActive && submittedPoint) {
+          cycleDone.add(submittedPoint);
+        }
 
-        status.textContent = data.triageCreated
-          ? `Logged. Auto-triage case created (#${data.triageId}).`
-          : 'Logged successfully.';
         activityForm.reset();
-        syncSiteName(setupSiteName.value || body.siteName);
+        syncSiteName(setupSiteName.value || body.siteName || 'Demo Site');
         await loadPointsForSite(setupSiteName.value || body.siteName);
+
+        if (cycleActive) {
+          moveToNextCyclePoint();
+        }
       } catch (err) {
         status.textContent = `Could not submit: ${err.message}`;
       }
@@ -393,6 +452,7 @@
 
     syncSiteName(setupSiteName.value);
     loadPointsForSite(setupSiteName.value);
+    updateCycleStatus();
   </script>
 </body>
 </html>
