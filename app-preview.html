@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pest Intel — Client App Preview</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .app-shell{max-width:760px;margin:20px auto;padding:16px}
+    .app-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .mode-toggle{display:flex;gap:8px;align-items:center;font-size:14px}
+    .big-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+    .big-btn{padding:16px;border-radius:14px;border:1px solid #d1d5db;background:#fff;font-weight:700;text-align:left;cursor:pointer}
+    .big-btn small{display:block;font-weight:500;color:#6b7280;margin-top:4px}
+    .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:12px}
+    .panel h3{margin:0 0 8px}
+    .stack{display:grid;gap:10px}
+    .stack label{display:grid;gap:6px;font-size:14px}
+    .stack input,.stack select,.stack textarea,.stack button{padding:12px;border:1px solid #d1d5db;border-radius:10px;font:inherit}
+    .stack textarea{min-height:84px}
+    .status{font-size:14px;padding:10px;border-radius:10px;background:#f3f4f6}
+    .easy .micro{font-size:15px}
+    .easy h2,.easy h3{font-size:1.25rem}
+    .easy .big-btn{font-size:18px}
+    .easy .stack input,.easy .stack select,.easy .stack textarea,.easy .stack button{font-size:17px;padding:14px}
+    @media (max-width:700px){.big-actions{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <div class="app-head">
+      <div>
+        <h2 style="margin:0">Pest Intel Client Portal (Preview)</h2>
+        <p class="micro" style="margin:4px 0 0">Designed for quick logging by any staff member in under 30 seconds.</p>
+      </div>
+      <label class="mode-toggle">
+        <input id="easyMode" type="checkbox" />
+        Easy text mode
+      </label>
+    </div>
+
+    <div class="big-actions">
+      <button class="big-btn" onclick="scrollToPanel('logPanel')">Log activity<small>Photo + location + what was found</small></button>
+      <button class="big-btn" onclick="scrollToPanel('checkPanel')">Run monthly check<small>Guided checklist with timestamps</small></button>
+      <button class="big-btn" onclick="scrollToPanel('recordsPanel')">View records<small>Find inspections, incidents, actions</small></button>
+      <button class="big-btn" onclick="scrollToPanel('helpPanel')">Get help now<small>Send triage request to Alvey team</small></button>
+    </div>
+
+    <section class="panel" id="logPanel">
+      <h3>Log activity</h3>
+      <form id="activityForm" class="stack">
+        <label>Site name
+          <input name="siteName" required value="Demo Site" />
+        </label>
+        <label>Location / area
+          <input name="location" required placeholder="e.g. under prep sink" />
+        </label>
+        <label>Finding type
+          <select name="findingType" required>
+            <option value="" selected disabled>Select finding</option>
+            <option>Mouse droppings</option>
+            <option>Rat smear marks</option>
+            <option>Bait consumption / bait take</option>
+            <option>Trap activation</option>
+            <option>Multiple insect sightings</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>Severity
+          <select name="severity" required>
+            <option>normal</option>
+            <option>high</option>
+            <option>critical</option>
+          </select>
+        </label>
+        <label>Notes
+          <textarea name="notes" placeholder="Optional notes"></textarea>
+        </label>
+        <button class="btn" type="submit">Submit activity log</button>
+      </form>
+      <p class="status" id="activityStatus">Not submitted yet.</p>
+    </section>
+
+    <section class="panel" id="checkPanel">
+      <h3>Monthly check (preview)</h3>
+      <p class="micro">In production this will be a simple guided checklist by monitoring point with required photo evidence.</p>
+    </section>
+
+    <section class="panel" id="recordsPanel">
+      <h3>Records (preview)</h3>
+      <p class="micro">Clients will be able to search records by date, area, finding type and export audit-ready history.</p>
+    </section>
+
+    <section class="panel" id="helpPanel">
+      <h3>Need help now?</h3>
+      <p class="micro">Urgent risk can trigger triage and professional escalation workflow automatically.</p>
+      <p><strong>Call:</strong> <a href="tel:+441704213025">01704 213025</a> / <a href="tel:+441772356789">01772 356789</a></p>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = window.PEST_INTEL_API_BASE || '';
+    const shell = document.getElementById('appShell');
+    document.getElementById('easyMode').addEventListener('change', (e) => {
+      shell.classList.toggle('easy', e.target.checked);
+    });
+
+    function scrollToPanel(id){
+      document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    document.getElementById('activityForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('activityStatus');
+      const body = Object.fromEntries(new FormData(e.target).entries());
+      status.textContent = 'Submitting...';
+
+      try {
+        if (!API_BASE) {
+          status.textContent = 'Preview mode: captured successfully (API not configured on this page).';
+          e.target.reset();
+          return;
+        }
+
+        const r = await fetch(`${API_BASE}/api/activity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Failed');
+
+        status.textContent = data.triageCreated
+          ? `Logged. Auto-triage case created (#${data.triageId}).`
+          : 'Logged successfully.';
+        e.target.reset();
+      } catch (err) {
+        status.textContent = `Could not submit: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
