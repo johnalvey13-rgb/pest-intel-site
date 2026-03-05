@@ -1,23 +1,32 @@
-# Pest Intel Backend (v1 scaffold)
+# Pest Intel Backend (v1)
 
-Simple MVP backend for lead capture and triage queue.
+MVP backend for lead capture + triage workflow.
 
-## Run locally
+## Run
 
 ```bash
 cd backend
 npm install
-npm run dev
+ADMIN_KEY='change-me' ALLOWED_ORIGIN='https://pest-intel-site.vercel.app' npm start
 ```
 
-API:
+## Endpoints
+
+Public:
 - `GET /health`
 - `POST /api/leads`
-- `GET /api/leads`
 - `POST /api/triage`
-- `GET /api/triage`
 
-Data is stored in JSON files under `backend/data/`.
+Admin (`x-admin-key` required):
+- `GET /api/leads`
+- `GET /api/triage`
+- `PATCH /api/triage/:id`
+- `GET /api/dashboard/summary`
+
+## Data storage
+- JSON files in `backend/data/` (`leads.json`, `triage.json`)
 
 ## Next production step
-Move storage to Postgres (Supabase/Neon), add auth, and role-based access.
+- Move data layer to Postgres (Supabase/Neon)
+- Add auth/session UI for admin portal
+- Add webhook notifications to Telegram for high-priority triage
