@@ -9,7 +9,13 @@
     .app-shell{max-width:760px;margin:20px auto;padding:16px}
     .app-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
     .mode-toggle{display:flex;gap:8px;align-items:center;font-size:14px}
-    .big-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+    .top-actions{display:flex;gap:10px;margin:12px 0 14px}
+    .menu-btn{padding:12px 14px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-weight:700;cursor:pointer}
+    .menu-overlay{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;z-index:70}
+    .menu-overlay.open{display:block}
+    .menu-drawer{position:fixed;left:12px;right:12px;top:72px;max-height:70vh;overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:10px;display:none;z-index:71;box-shadow:0 20px 40px rgba(0,0,0,.22)}
+    .menu-drawer.open{display:block}
+    .big-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .big-btn{padding:16px;border-radius:14px;border:1px solid #d1d5db;background:#fff;font-weight:700;text-align:left;cursor:pointer}
     .big-btn small{display:block;font-weight:500;color:#6b7280;margin-top:4px}
     .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:12px}
@@ -44,13 +50,24 @@
       </label>
     </div>
 
-    <div class="big-actions">
-      <button class="big-btn" onclick="scrollToPanel('onboardingPanel')">Start site setup walkthrough<small>Identify risks before placing points</small></button>
-      <button class="big-btn" onclick="scrollToPanel('setupPanel')">Setup bait points<small>Name each point as area + location once</small></button>
-      <button class="big-btn" onclick="scrollToPanel('logPanel')">Log activity<small>Photo + point + what was found</small></button>
-      <button class="big-btn" onclick="scrollToPanel('checkPanel')">Run monthly check<small>Guided checklist with timestamps</small></button>
-      <button class="big-btn" onclick="scrollToPanel('helpPanel')">Need help now<small>Escalate to professional support</small></button>
-      <button class="big-btn" onclick="scrollToPanel('recordsPanel')">View records<small>Find inspections, incidents, actions</small></button>
+    <div class="top-actions">
+      <button class="menu-btn" id="openMenuBtn" type="button">☰ Menu</button>
+    </div>
+
+    <div class="menu-overlay" id="menuOverlay"></div>
+    <div class="menu-drawer" id="menuDrawer">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+        <strong>Quick actions</strong>
+        <button class="menu-btn" id="closeMenuBtn" type="button">Close</button>
+      </div>
+      <div class="big-actions">
+        <button class="big-btn" onclick="goPanel('onboardingPanel')">Start site setup walkthrough<small>Identify risks before placing points</small></button>
+        <button class="big-btn" onclick="goPanel('setupPanel')">Setup bait points<small>Name each point as area + location once</small></button>
+        <button class="big-btn" onclick="goPanel('logPanel')">Log activity<small>Photo + point + what was found</small></button>
+        <button class="big-btn" onclick="goPanel('checkPanel')">Run monthly check<small>Guided checklist with timestamps</small></button>
+        <button class="big-btn" onclick="goPanel('helpPanel')">Need help now<small>Escalate to professional support</small></button>
+        <button class="big-btn" onclick="goPanel('recordsPanel')">View records<small>Find inspections, incidents, actions</small></button>
+      </div>
     </div>
 
     <section class="panel" id="onboardingPanel">
@@ -202,6 +219,10 @@
     const activityPoint = document.getElementById('activityPoint');
     const startCycleBtn = document.getElementById('startCycleBtn');
     const cycleStatus = document.getElementById('cycleStatus');
+    const openMenuBtn = document.getElementById('openMenuBtn');
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    const menuDrawer = document.getElementById('menuDrawer');
+    const menuOverlay = document.getElementById('menuOverlay');
 
     let cycleActive = false;
     let cyclePoints = [];
@@ -211,9 +232,26 @@
       shell.classList.toggle('easy', e.target.checked);
     });
 
+    function openMenu() {
+      menuDrawer.classList.add('open');
+      menuOverlay.classList.add('open');
+    }
+
+    function closeMenu() {
+      menuDrawer.classList.remove('open');
+      menuOverlay.classList.remove('open');
+    }
+
     function scrollToPanel(id){
       document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
     }
+
+    function goPanel(id){
+      closeMenu();
+      scrollToPanel(id);
+    }
+
+    window.goPanel = goPanel;
 
     function localKey(siteName){
       return `pest-intel-points:${(siteName || '').trim().toLowerCase()}`;
@@ -330,6 +368,13 @@
       if (!actions.length) actions.push('Maintain current controls and continue routine checks.');
       return { stage, riskScore, actions };
     }
+
+    openMenuBtn.addEventListener('click', openMenu);
+    closeMenuBtn.addEventListener('click', closeMenu);
+    menuOverlay.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
 
     startCycleBtn.addEventListener('click', startPointCycle);
 
