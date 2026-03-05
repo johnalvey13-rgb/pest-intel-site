@@ -227,15 +227,83 @@
         <p>Tell us about your site and we’ll recommend the right plan.</p>
         <p class="micro"><strong>Need help now?</strong> Call us on <a href="tel:+441704213025">01704 213025</a> or <a href="tel:+441772356789">01772 356789</a>.</p>
         <form class="lead-form" action="https://formspree.io/f/mzzgrvzg" method="POST">
-          <input name="name" placeholder="Name" required />
-          <input name="business" placeholder="Business name" required />
-          <input name="business_type" placeholder="Business type" required />
-          <input name="site_size" placeholder="Site size (m²)" required />
-          <input name="floors" placeholder="Number of floors" required />
-          <input name="current_setup" placeholder="Current pest setup" required />
-          <input name="last_activity" placeholder="Last pest activity" required />
-          <input type="email" name="email" placeholder="Email" required />
-          <input name="mobile" placeholder="Mobile" required />
+          <label>
+            Name *
+            <input name="name" placeholder="Your full name" required />
+          </label>
+          <label>
+            Business name *
+            <input name="business" placeholder="Business name" required />
+          </label>
+
+          <label>
+            Business type *
+            <select name="business_type" required>
+              <option value="" selected disabled>Select business type</option>
+              <option>Sandwich bar / takeaway</option>
+              <option>Small café</option>
+              <option>Small restaurant</option>
+              <option>Pub with kitchen</option>
+              <option>School / education</option>
+              <option>Care setting</option>
+              <option>Supermarket / food retail</option>
+              <option>Other commercial premises</option>
+            </select>
+          </label>
+
+          <label>
+            Site size (example bands) *
+            <select name="site_size_example" required>
+              <option value="" selected disabled>Select closest size band</option>
+              <option>Sandwich bar (up to 80 m²)</option>
+              <option>Small café (80–150 m²)</option>
+              <option>Small restaurant (150–300 m²)</option>
+              <option>Medium premises (300–1,000 m²)</option>
+              <option>Large grounds / multi-area site (1,000+ m²)</option>
+            </select>
+          </label>
+
+          <label>
+            Number of floors *
+            <select name="floors" required>
+              <option value="" selected disabled>Select floors</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4+</option>
+            </select>
+          </label>
+
+          <label>
+            Current pest setup *
+            <select name="current_setup" required>
+              <option value="" selected disabled>Select current setup</option>
+              <option>None</option>
+              <option>Contract service</option>
+              <option>Ad-hoc callouts</option>
+              <option>In-house checks only</option>
+            </select>
+          </label>
+
+          <label>
+            Recent activity level *
+            <select name="last_activity" required>
+              <option value="" selected disabled>Select activity level</option>
+              <option>None recently</option>
+              <option>Occasional signs</option>
+              <option>Repeated signs</option>
+              <option>Active issue now</option>
+            </select>
+          </label>
+
+          <label>
+            Email *
+            <input type="email" name="email" placeholder="you@business.com" required />
+          </label>
+          <label>
+            Mobile *
+            <input name="mobile" placeholder="+44 7xxx xxxxxx" required />
+          </label>
           <button class="btn" type="submit">Get My Compliance Plan</button>
         </form>
         <p class="micro">Compliance note: Pest Intel supports pest monitoring and compliance workflows. Businesses remain responsible for statutory obligations and site hygiene controls. Professional intervention may be required where risk triggers indicate elevated activity.</p>
