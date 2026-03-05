@@ -162,6 +162,13 @@
         </label>
         <button class="btn" id="startCycleBtn" type="button">Start full point cycle</button>
         <p class="status" id="cycleStatus">Cycle not started.</p>
+        <label class="mode-toggle" style="padding:4px 0"> 
+          <input id="requirePhotoToggle" type="checkbox" />
+          Require photo evidence for each point this visit
+        </label>
+        <label>Photo evidence
+          <input id="activityPhoto" name="photo" type="file" accept="image/*" capture="environment" />
+        </label>
         <label>Finding type
           <select name="findingType" required>
             <option value="" selected disabled>Select finding</option>
@@ -186,8 +193,10 @@
           <textarea name="notes" placeholder="Optional notes"></textarea>
         </label>
         <button class="btn" type="submit">Submit activity log</button>
+        <button class="btn" id="completeVisitBtn" type="button" disabled>Complete visit</button>
       </form>
       <p class="status" id="activityStatus">Not submitted yet.</p>
+      <p class="status" id="visitStatus">Visit not started.</p>
       </div>
     </details>
 
@@ -236,7 +245,11 @@
     const onboardingSiteName = document.getElementById('onboardingSiteName');
     const activityPoint = document.getElementById('activityPoint');
     const startCycleBtn = document.getElementById('startCycleBtn');
+    const completeVisitBtn = document.getElementById('completeVisitBtn');
     const cycleStatus = document.getElementById('cycleStatus');
+    const visitStatus = document.getElementById('visitStatus');
+    const requirePhotoToggle = document.getElementById('requirePhotoToggle');
+    const activityPhoto = document.getElementById('activityPhoto');
     const openMenuBtn = document.getElementById('openMenuBtn');
     const closeMenuBtn = document.getElementById('closeMenuBtn');
     const menuDrawer = document.getElementById('menuDrawer');
@@ -245,6 +258,7 @@
     let cycleActive = false;
     let cyclePoints = [];
     let cycleDone = new Set();
+    let currentVisitId = null;
 
     document.getElementById('easyMode').addEventListener('change', (e) => {
       shell.classList.toggle('easy', e.target.checked);
@@ -304,16 +318,29 @@
       ].join('');
     }
 
+    function updateVisitControls() {
+      const canComplete = cycleActive && cyclePoints.length > 0 && cycleDone.size === cyclePoints.length;
+      completeVisitBtn.disabled = !canComplete;
+      if (!cycleActive) {
+        visitStatus.textContent = 'Visit not started.';
+      } else {
+        visitStatus.textContent = `Visit in progress (${cycleDone.size}/${cyclePoints.length} points logged).`;
+      }
+    }
+
     function updateCycleStatus(message = '') {
       if (message) {
         cycleStatus.textContent = message;
+        updateVisitControls();
         return;
       }
       if (!cycleActive) {
         cycleStatus.textContent = 'Cycle not started.';
+        updateVisitControls();
         return;
       }
       cycleStatus.textContent = `Point cycle: ${cycleDone.size}/${cyclePoints.length} completed.`;
+      updateVisitControls();
     }
 
     function startPointCycle() {
@@ -327,17 +354,17 @@
       }
 
       cycleActive = true;
+      currentVisitId = `visit-${Date.now()}`;
       cycleDone = new Set();
       activityPoint.value = cyclePoints[0];
-      updateCycleStatus();
+      updateCycleStatus('Cycle started. Log each bait point to complete this visit.');
     }
 
     function moveToNextCyclePoint() {
       if (!cycleActive) return;
       const remaining = cyclePoints.filter(p => !cycleDone.has(p));
       if (!remaining.length) {
-        cycleActive = false;
-        updateCycleStatus('Cycle complete: all bait points logged for this visit.');
+        updateCycleStatus('All points logged. Press "Complete visit" to close this inspection.');
         return;
       }
       activityPoint.value = remaining[0];
@@ -397,7 +424,25 @@
       if (e.key === 'Escape') closeMenu();
     });
 
+    requirePhotoToggle.addEventListener('change', () => {
+      activityPhoto.required = requirePhotoToggle.checked;
+    });
+
     startCycleBtn.addEventListener('click', startPointCycle);
+    completeVisitBtn.addEventListener('click', () => {
+      if (!(cycleActive && cyclePoints.length && cycleDone.size === cyclePoints.length)) {
+        visitStatus.textContent = 'Complete all bait points before finishing the visit.';
+        return;
+      }
+      const completedAt = new Date().toLocaleString('en-GB');
+      cycleActive = false;
+      currentVisitId = null;
+      cyclePoints = [];
+      cycleDone = new Set();
+      activityPhoto.required = false;
+      requirePhotoToggle.checked = false;
+      updateCycleStatus(`Cycle closed. Visit completed at ${completedAt}. Start a new cycle for next inspection.`);
+    });
 
     setupSiteName.addEventListener('change', () => {
       syncSiteName(setupSiteName.value);
@@ -451,6 +496,9 @@
       saveLocalPoints(siteName, points);
       renderPointOptions(points);
       cycleActive = false;
+      currentVisitId = null;
+      cyclePoints = [];
+      cycleDone = new Set();
       updateCycleStatus('Cycle reset. Press "Start full point cycle" for this visit.');
 
       if (!API_BASE) {
@@ -470,6 +518,9 @@
         saveLocalPoints(siteName, names);
         renderPointOptions(names);
         cycleActive = false;
+        currentVisitId = null;
+        cyclePoints = [];
+        cycleDone = new Set();
         updateCycleStatus('Cycle reset. Press "Start full point cycle" for this visit.');
         status.textContent = `Saved. ${data.pointsTotal} bait points now stored for ${siteName}.`;
       } catch (err) {
@@ -480,14 +531,34 @@
     activityForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const status = document.getElementById('activityStatus');
-      const body = Object.fromEntries(new FormData(activityForm).entries());
+      const formData = new FormData(activityForm);
+      const photoFile = activityPhoto.files?.[0] || null;
+
+      const body = {
+        siteName: formData.get('siteName'),
+        monitoringPointName: formData.get('monitoringPointName'),
+        findingType: formData.get('findingType'),
+        severity: formData.get('severity'),
+        notes: formData.get('notes') || '',
+      };
+      body.location = body.monitoringPointName;
+      body.visitId = currentVisitId || null;
+      body.photoProvided = Boolean(photoFile);
+      body.photoName = photoFile ? photoFile.name : null;
+
+      if (requirePhotoToggle.checked && !photoFile) {
+        status.textContent = 'Photo required for this visit. Please attach a photo before submitting.';
+        return;
+      }
+
       const submittedPoint = body.monitoringPointName;
-      body.location = body.location || body.monitoringPointName;
       status.textContent = 'Submitting...';
 
       try {
         if (!API_BASE) {
-          status.textContent = 'Preview mode: captured successfully (API not configured on this page).';
+          status.textContent = body.photoProvided
+            ? `Preview mode: logged with photo (${body.photoName}).`
+            : 'Preview mode: logged successfully (API not configured on this page).';
         } else {
           const r = await fetch(`${API_BASE}/api/activity`, {
             method: 'POST',
@@ -506,7 +577,10 @@
           cycleDone.add(submittedPoint);
         }
 
+        const requirePhotoState = requirePhotoToggle.checked;
         activityForm.reset();
+        requirePhotoToggle.checked = requirePhotoState;
+        activityPhoto.required = requirePhotoState;
         syncSiteName(setupSiteName.value || body.siteName || 'Demo Site');
         await loadPointsForSite(setupSiteName.value || body.siteName);
 
