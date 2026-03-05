@@ -17,16 +17,21 @@ Public:
 - `POST /api/leads`
 - `POST /api/triage`
 - `POST /api/activity` (client activity logging)
+- `POST /api/sites/setup` (site + monitoring points setup)
+- `GET /api/sites/:siteName/monitoring-points`
 
 Admin (`x-admin-key` required):
 - `GET /api/leads`
 - `GET /api/triage`
 - `PATCH /api/triage/:id`
 - `GET /api/activity`
+- `GET /api/sites`
 - `GET /api/workflow-events`
 - `GET /api/dashboard/summary`
 
 ## Current automation
+- Site setup stores named monitoring points so repeat visits can reuse them.
+- Activity logs can reference monitoring points; unknown points are auto-added to that site.
 - Activity logs auto-create triage cases when trigger findings are detected:
   - droppings
   - gnaw damage
@@ -34,13 +39,14 @@ Admin (`x-admin-key` required):
   - trap activation
   - multiple insect sightings
   - smear marks
-- Workflow events are recorded for lead/triage/activity actions.
+- Workflow events are recorded for lead/triage/activity/site actions.
 
 ## Data storage
 JSON files in `backend/data/`:
 - `leads.json`
 - `triage.json`
 - `activity.json`
+- `sites.json`
 - `workflow-events.json`
 
 ## Next production step

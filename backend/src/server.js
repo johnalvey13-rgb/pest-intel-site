@@ -12,6 +12,7 @@ const DATA_DIR = path.resolve(process.cwd(), 'data');
 const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 const TRIAGE_FILE = path.join(DATA_DIR, 'triage.json');
 const ACTIVITY_FILE = path.join(DATA_DIR, 'activity.json');
+const SITES_FILE = path.join(DATA_DIR, 'sites.json');
 const EVENTS_FILE = path.join(DATA_DIR, 'workflow-events.json');
 
 app.use(cors({ origin: ALLOWED_ORIGIN === '*' ? true : ALLOWED_ORIGIN }));
@@ -43,6 +44,52 @@ function appendEvent(type, payload = {}) {
   const all = read(EVENTS_FILE);
   all.push({ id: id(), createdAt: now(), type, payload });
   write(EVENTS_FILE, all);
+}
+
+function normalizeSiteName(value = '') {
+  return value.toString().trim().toLowerCase();
+}
+
+function getOrCreateSite(siteName) {
+  const name = (siteName || '').trim();
+  const normalized = normalizeSiteName(name);
+  if (!name) return null;
+
+  const all = read(SITES_FILE);
+  let site = all.find((x) => normalizeSiteName(x.siteName) === normalized);
+  if (!site) {
+    site = {
+      id: id(),
+      siteName: name,
+      createdAt: now(),
+      monitoringPoints: [],
+    };
+    all.push(site);
+    write(SITES_FILE, all);
+    appendEvent('site.created', { siteId: site.id, siteName: site.siteName });
+  }
+  return site;
+}
+
+function upsertMonitoringPoint(siteName, pointName, type = 'general') {
+  const name = (pointName || '').trim();
+  if (!name) return null;
+
+  const all = read(SITES_FILE);
+  const siteIdx = all.findIndex((x) => normalizeSiteName(x.siteName) === normalizeSiteName(siteName));
+  if (siteIdx < 0) return null;
+
+  const existing = all[siteIdx].monitoringPoints || [];
+  const pointIdx = existing.findIndex((p) => (p.name || '').trim().toLowerCase() === name.toLowerCase());
+  if (pointIdx >= 0) return existing[pointIdx];
+
+  const point = { id: id(), name, type, createdAt: now() };
+  existing.push(point);
+  all[siteIdx].monitoringPoints = existing;
+  all[siteIdx].updatedAt = now();
+  write(SITES_FILE, all);
+  appendEvent('monitoring-point.created', { siteName: all[siteIdx].siteName, pointName: name, type });
+  return point;
 }
 
 function shouldEscalate(findingType = '', severity = '') {
@@ -130,11 +177,63 @@ app.patch('/api/triage/:id', requireAdmin, (req, res) => {
   res.json({ ok: true, item: all[idx] });
 });
 
+// Site setup + reusable monitoring points
+app.post('/api/sites/setup', (req, res) => {
+  const body = req.body || {};
+  if (!body.siteName) return res.status(400).json({ error: 'siteName is required' });
+
+  const site = getOrCreateSite(body.siteName);
+  const points = Array.isArray(body.monitoringPoints) ? body.monitoringPoints : [];
+
+  let created = 0;
+  points.forEach((p) => {
+    if (!p) return;
+    const pointName = typeof p === 'string' ? p : p.name;
+    const pointType = typeof p === 'string' ? 'general' : (p.type || 'general');
+    const point = upsertMonitoringPoint(site.siteName, pointName, pointType);
+    if (point) created += 1;
+  });
+
+  const refreshed = read(SITES_FILE).find((x) => normalizeSiteName(x.siteName) === normalizeSiteName(site.siteName));
+  appendEvent('site.setup_completed', {
+    siteName: site.siteName,
+    pointsTotal: (refreshed?.monitoringPoints || []).length,
+  });
+
+  res.status(201).json({
+    ok: true,
+    siteName: site.siteName,
+    pointsTotal: (refreshed?.monitoringPoints || []).length,
+    pointsAdded: created,
+    monitoringPoints: refreshed?.monitoringPoints || [],
+  });
+});
+
+app.get('/api/sites/:siteName/monitoring-points', (req, res) => {
+  const siteName = decodeURIComponent(req.params.siteName || '');
+  const all = read(SITES_FILE);
+  const site = all.find((x) => normalizeSiteName(x.siteName) === normalizeSiteName(siteName));
+  if (!site) return res.status(404).json({ error: 'site not found' });
+  res.json({ siteName: site.siteName, monitoringPoints: site.monitoringPoints || [] });
+});
+
+app.get('/api/sites', requireAdmin, (_, res) => {
+  const all = read(SITES_FILE);
+  res.json({ count: all.length, items: all.slice(-300).reverse() });
+});
+
 // Client activity logging (foundation for app workflow)
 app.post('/api/activity', (req, res) => {
   const body = req.body || {};
   if (!body.siteName || !body.location || !body.findingType) {
     return res.status(400).json({ error: 'siteName, location, findingType are required' });
+  }
+
+  const site = getOrCreateSite(body.siteName);
+  const monitoringPointName = (body.monitoringPointName || body.monitoringPoint || '').toString().trim();
+  let monitoringPoint = null;
+  if (monitoringPointName) {
+    monitoringPoint = upsertMonitoringPoint(site.siteName, monitoringPointName, body.monitoringPointType || 'general');
   }
 
   const activity = read(ACTIVITY_FILE);
@@ -145,6 +244,9 @@ app.post('/api/activity', (req, res) => {
     status: 'logged',
     source: body.source || 'client-app',
     ...body,
+    siteId: site?.id || null,
+    monitoringPointId: monitoringPoint?.id || null,
+    monitoringPointName: monitoringPoint?.name || monitoringPointName || null,
   };
   activity.push(row);
   write(ACTIVITY_FILE, activity);
@@ -189,12 +291,14 @@ app.get('/api/dashboard/summary', requireAdmin, (_, res) => {
   const leads = read(LEADS_FILE);
   const triage = read(TRIAGE_FILE);
   const activity = read(ACTIVITY_FILE);
+  const sites = read(SITES_FILE);
   const openTriage = triage.filter((x) => !['resolved', 'closed'].includes((x.status || '').toLowerCase()));
   res.json({
     leadsTotal: leads.length,
     triageTotal: triage.length,
     triageOpen: openTriage.length,
     activityTotal: activity.length,
+    sitesTotal: sites.length,
     latestLead: leads[leads.length - 1] || null,
     latestTriage: triage[triage.length - 1] || null,
     latestActivity: activity[activity.length - 1] || null,

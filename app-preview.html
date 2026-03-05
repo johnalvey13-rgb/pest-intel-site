@@ -40,17 +40,36 @@
     </div>
 
     <div class="big-actions">
-      <button class="big-btn" onclick="scrollToPanel('logPanel')">Log activity<small>Photo + location + what was found</small></button>
+      <button class="big-btn" onclick="scrollToPanel('setupPanel')">Setup monitoring points<small>Name all bait/trap/monitor points once</small></button>
+      <button class="big-btn" onclick="scrollToPanel('logPanel')">Log activity<small>Photo + point + what was found</small></button>
       <button class="big-btn" onclick="scrollToPanel('checkPanel')">Run monthly check<small>Guided checklist with timestamps</small></button>
       <button class="big-btn" onclick="scrollToPanel('recordsPanel')">View records<small>Find inspections, incidents, actions</small></button>
-      <button class="big-btn" onclick="scrollToPanel('helpPanel')">Get help now<small>Send triage request to Alvey team</small></button>
     </div>
+
+    <section class="panel" id="setupPanel">
+      <h3>Setup monitoring points</h3>
+      <form id="setupForm" class="stack">
+        <label>Site name
+          <input id="setupSiteName" name="siteName" required value="Demo Site" />
+        </label>
+        <label>Monitoring points (one per line)
+          <textarea id="setupPoints" name="pointsRaw" placeholder="Kitchen station 1&#10;Rear yard bait box A&#10;Loft monitor 2"></textarea>
+        </label>
+        <button class="btn" type="submit">Save monitoring points</button>
+      </form>
+      <p class="status" id="setupStatus">No monitoring points saved yet.</p>
+    </section>
 
     <section class="panel" id="logPanel">
       <h3>Log activity</h3>
       <form id="activityForm" class="stack">
         <label>Site name
           <input name="siteName" required value="Demo Site" />
+        </label>
+        <label>Monitoring point
+          <select id="activityPoint" name="monitoringPointName" required>
+            <option value="" selected disabled>Select monitoring point</option>
+          </select>
         </label>
         <label>Location / area
           <input name="location" required placeholder="e.g. under prep sink" />
@@ -101,6 +120,11 @@
   <script>
     const API_BASE = window.PEST_INTEL_API_BASE || '';
     const shell = document.getElementById('appShell');
+    const setupForm = document.getElementById('setupForm');
+    const activityForm = document.getElementById('activityForm');
+    const setupSiteName = document.getElementById('setupSiteName');
+    const activityPoint = document.getElementById('activityPoint');
+
     document.getElementById('easyMode').addEventListener('change', (e) => {
       shell.classList.toggle('easy', e.target.checked);
     });
@@ -109,16 +133,96 @@
       document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
     }
 
-    document.getElementById('activityForm').addEventListener('submit', async (e) => {
+    function localKey(siteName){
+      return `pest-intel-points:${(siteName || '').trim().toLowerCase()}`;
+    }
+
+    function loadLocalPoints(siteName){
+      const raw = localStorage.getItem(localKey(siteName));
+      if (!raw) return [];
+      try { return JSON.parse(raw); } catch { return []; }
+    }
+
+    function saveLocalPoints(siteName, points){
+      localStorage.setItem(localKey(siteName), JSON.stringify(points));
+    }
+
+    function renderPointOptions(points = []) {
+      const clean = points.filter(Boolean);
+      activityPoint.innerHTML = [
+        '<option value="" selected disabled>Select monitoring point</option>',
+        ...clean.map((p) => `<option>${typeof p === 'string' ? p : p.name}</option>`)
+      ].join('');
+    }
+
+    async function loadPointsForSite(siteName) {
+      const localPoints = loadLocalPoints(siteName);
+      if (localPoints.length) renderPointOptions(localPoints);
+
+      if (!API_BASE) return;
+      try {
+        const r = await fetch(`${API_BASE}/api/sites/${encodeURIComponent(siteName)}/monitoring-points`);
+        if (!r.ok) return;
+        const data = await r.json();
+        const points = (data.monitoringPoints || []).map(p => p.name);
+        if (points.length) {
+          saveLocalPoints(siteName, points);
+          renderPointOptions(points);
+        }
+      } catch {}
+    }
+
+    setupSiteName.addEventListener('change', () => loadPointsForSite(setupSiteName.value));
+    activityForm.siteName.addEventListener('change', () => loadPointsForSite(activityForm.siteName.value));
+
+    setupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('setupStatus');
+      const form = Object.fromEntries(new FormData(setupForm).entries());
+      const siteName = (form.siteName || '').trim();
+      const points = (form.pointsRaw || '').split('\n').map(x => x.trim()).filter(Boolean);
+      if (!siteName || !points.length) {
+        status.textContent = 'Please enter site name and at least one monitoring point.';
+        return;
+      }
+
+      saveLocalPoints(siteName, points);
+      renderPointOptions(points);
+
+      if (!API_BASE) {
+        status.textContent = `Saved ${points.length} points for ${siteName} (preview mode).`;
+        activityForm.siteName.value = siteName;
+        return;
+      }
+
+      try {
+        const r = await fetch(`${API_BASE}/api/sites/setup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ siteName, monitoringPoints: points })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Failed to save setup');
+        const names = (data.monitoringPoints || []).map(p => p.name);
+        saveLocalPoints(siteName, names);
+        renderPointOptions(names);
+        status.textContent = `Saved. ${data.pointsTotal} monitoring points now stored for ${siteName}.`;
+        activityForm.siteName.value = siteName;
+      } catch (err) {
+        status.textContent = `Could not save setup: ${err.message}`;
+      }
+    });
+
+    activityForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const status = document.getElementById('activityStatus');
-      const body = Object.fromEntries(new FormData(e.target).entries());
+      const body = Object.fromEntries(new FormData(activityForm).entries());
       status.textContent = 'Submitting...';
 
       try {
         if (!API_BASE) {
           status.textContent = 'Preview mode: captured successfully (API not configured on this page).';
-          e.target.reset();
+          activityForm.reset();
           return;
         }
 
@@ -133,11 +237,14 @@
         status.textContent = data.triageCreated
           ? `Logged. Auto-triage case created (#${data.triageId}).`
           : 'Logged successfully.';
-        e.target.reset();
+        activityForm.reset();
+        await loadPointsForSite(setupSiteName.value || body.siteName);
       } catch (err) {
         status.textContent = `Could not submit: ${err.message}`;
       }
     });
+
+    loadPointsForSite(setupSiteName.value);
   </script>
 </body>
 </html>
