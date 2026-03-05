@@ -1,0 +1,27 @@
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;color:#111827;background:#fff;line-height:1.45}a{text-decoration:none;color:inherit}
+.container{max-width:1120px;margin:0 auto;padding:0 16px}
+.topbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;z-index:20}
+.nav{display:flex;justify-content:space-between;align-items:center;height:64px}.brand{font-weight:700}.brand span{font-weight:400;color:#6b7280;font-size:12px;margin-left:6px}
+nav{display:flex;gap:14px;align-items:center}nav a{font-size:14px;color:#374151}
+.hero{padding:64px 0 48px}.hero h1{font-size:38px;max-width:760px;margin:0 0 12px}.hero p{max-width:760px;color:#374151}
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.trust{margin-top:12px;color:#6b7280;font-size:14px}
+.section{padding:64px 0}.alt{background:#f8fafc}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card-list{display:grid;gap:12px}.card{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+.cards-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.price-card{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}.featured{border-color:#0f766e;box-shadow:0 0 0 1px #0f766e inset}
+.price{font-size:28px;font-weight:800}.price span{font-size:12px;font-weight:500;color:#6b7280}
+.btn{display:inline-block;background:#0f766e;color:#fff;padding:11px 16px;border-radius:10px;border:1px solid #0f766e;font-weight:600}
+.btn-outline{background:#fff;color:#0f766e}.btn-sm{padding:8px 12px;font-size:13px}
+.lead-form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.lead-form input,.lead-form button{padding:11px;border:1px solid #d1d5db;border-radius:10px;font:inherit}.lead-form button{grid-column:1/-1;border:none;cursor:pointer}
+details{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;background:#fff;margin-bottom:8px}
+.micro{color:#6b7280;font-size:13px}
+footer{background:#0b1220;color:#e5e7eb;padding:24px 0}.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mobile-cta{display:none}
+@media (max-width: 900px){
+  nav a:not(.btn-sm){display:none}
+  .grid-2,.cards-4,.lead-form{grid-template-columns:1fr}
+  .hero{padding:44px 0 30px}.hero h1{font-size:32px}
+  .section{padding:40px 0}
+  .mobile-cta{display:block;position:fixed;left:12px;right:12px;bottom:12px;text-align:center;background:#0f766e;color:#fff;padding:12px;border-radius:10px;z-index:30}
+  body{padding-bottom:68px}
+}
