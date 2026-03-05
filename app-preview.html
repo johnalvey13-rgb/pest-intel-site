@@ -34,6 +34,9 @@
     .chip{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
     .chip.green{background:#dcfce7;color:#166534}.chip.amber{background:#fef3c7;color:#92400e}.chip.red{background:#fee2e2;color:#991b1b}
     .actions-list{margin:8px 0 0;padding-left:18px}.actions-list li{margin:6px 0}
+    .point-checklist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+    .point-checklist li{padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;background:#fff}
+    .point-checklist li.done{background:#ecfdf5;border-color:#86efac;color:#166534}
     details.learn{border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fff}
     details.learn summary{cursor:pointer;font-weight:600}
     .easy .micro{font-size:15px}
@@ -162,6 +165,7 @@
         </label>
         <button class="btn" id="startCycleBtn" type="button">Start full point cycle</button>
         <p class="status" id="cycleStatus">Cycle not started.</p>
+        <ul id="pointChecklist" class="point-checklist"></ul>
         <label class="mode-toggle" style="padding:4px 0"> 
           <input id="requirePhotoToggle" type="checkbox" />
           Require photo evidence for each point this visit
@@ -247,6 +251,7 @@
     const startCycleBtn = document.getElementById('startCycleBtn');
     const completeVisitBtn = document.getElementById('completeVisitBtn');
     const cycleStatus = document.getElementById('cycleStatus');
+    const pointChecklist = document.getElementById('pointChecklist');
     const visitStatus = document.getElementById('visitStatus');
     const requirePhotoToggle = document.getElementById('requirePhotoToggle');
     const activityPhoto = document.getElementById('activityPhoto');
@@ -318,6 +323,17 @@
       ].join('');
     }
 
+    function renderCycleChecklist() {
+      if (!cycleActive || !cyclePoints.length) {
+        pointChecklist.innerHTML = '';
+        return;
+      }
+      pointChecklist.innerHTML = cyclePoints.map((p) => {
+        const done = cycleDone.has(p);
+        return `<li class="${done ? 'done' : ''}">${done ? '✅' : '⬜'} ${p}</li>`;
+      }).join('');
+    }
+
     function updateVisitControls() {
       const canComplete = cycleActive && cyclePoints.length > 0 && cycleDone.size === cyclePoints.length;
       completeVisitBtn.disabled = !canComplete;
@@ -326,6 +342,7 @@
       } else {
         visitStatus.textContent = `Visit in progress (${cycleDone.size}/${cyclePoints.length} points logged).`;
       }
+      renderCycleChecklist();
     }
 
     function updateCycleStatus(message = '') {
