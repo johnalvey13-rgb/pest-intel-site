@@ -1,7 +1,7 @@
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;color:#111827;background:#fff;line-height:1.45}a{text-decoration:none;color:inherit}
 .container{max-width:1120px;margin:0 auto;padding:0 16px}
 .topbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;z-index:20}
-.nav{display:flex;justify-content:space-between;align-items:center;height:64px}.brand{font-weight:700}.brand span{font-weight:400;color:#6b7280;font-size:12px;margin-left:6px}
+.nav{display:flex;justify-content:space-between;align-items:center;height:64px}.brand{font-weight:700;display:flex;align-items:center;gap:8px}.logo{height:30px;width:auto;display:block;border-radius:4px}.brand span{font-weight:400;color:#6b7280;font-size:12px;margin-left:2px}
 nav{display:flex;gap:14px;align-items:center}nav a{font-size:14px;color:#374151}
 .hero{padding:64px 0 48px}.hero h1{font-size:38px;max-width:760px;margin:0 0 12px}.hero p{max-width:760px;color:#374151}
 .cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.trust{margin-top:12px;color:#6b7280;font-size:14px}
