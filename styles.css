@@ -14,6 +14,7 @@ nav{display:flex;gap:14px;align-items:center}nav a{font-size:14px;color:#374151}
 .btn-outline{background:#fff;color:#0f766e}.btn-sm{padding:8px 12px;font-size:13px}
 .lead-form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.lead-form input,.lead-form button{padding:11px;border:1px solid #d1d5db;border-radius:10px;font:inherit}.lead-form button{grid-column:1/-1;border:none;cursor:pointer}
 details{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;background:#fff;margin-bottom:8px}
+.evidence-card{padding:10px}.evidence-card img{width:100%;height:200px;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px}
 .micro{color:#6b7280;font-size:13px}
 footer{background:#0b1220;color:#e5e7eb;padding:24px 0}.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .mobile-cta{display:none}
@@ -24,6 +25,7 @@ footer{background:#0b1220;color:#e5e7eb;padding:24px 0}.foot{display:flex;justif
   .grid-2,.cards-3,.cards-4,.lead-form{grid-template-columns:1fr}
   .hero{padding:44px 0 30px}.hero h1{font-size:32px}
   .section{padding:40px 0}
+  .evidence-card img{height:170px}
   .mobile-cta{display:block;position:fixed;left:12px;right:12px;bottom:12px;text-align:center;background:#0f766e;color:#fff;padding:12px;border-radius:10px;z-index:30}
   body{padding-bottom:68px}
 }
