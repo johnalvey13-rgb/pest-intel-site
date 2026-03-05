@@ -20,6 +20,12 @@
     .big-btn small{display:block;font-weight:500;color:#6b7280;margin-top:4px}
     .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:12px}
     .panel h3{margin:0 0 8px}
+    .collapsible{padding:0}
+    .collapsible > summary{list-style:none;cursor:pointer;padding:14px 16px;font-weight:700}
+    .collapsible > summary::-webkit-details-marker{display:none}
+    .collapsible > summary::after{content:'+';float:right;color:#6b7280}
+    .collapsible[open] > summary::after{content:'–'}
+    .panel-body{padding:0 14px 14px}
     .stack{display:grid;gap:10px}
     .stack label{display:grid;gap:6px;font-size:14px}
     .stack input,.stack select,.stack textarea,.stack button{padding:12px;border:1px solid #d1d5db;border-radius:10px;font:inherit}
@@ -70,8 +76,9 @@
       </div>
     </div>
 
-    <section class="panel" id="onboardingPanel">
-      <h3>Site setup walkthrough (simple language)</h3>
+    <details class="panel collapsible" id="onboardingPanel">
+      <summary>Site setup walkthrough</summary>
+      <div class="panel-body">
       <p class="micro">This replaces technical terminology with plain checks so teams know what to watch and fix first.</p>
       <form id="onboardingForm" class="stack">
         <label>Site name
@@ -122,10 +129,12 @@
         <summary>Why this matters (optional)</summary>
         <p class="micro">The app follows an IPM approach: prevention first, then monitoring, then escalation when trigger evidence appears.</p>
       </details>
-    </section>
+      </div>
+    </details>
 
-    <section class="panel" id="setupPanel">
-      <h3>Setup bait points</h3>
+    <details class="panel collapsible" id="setupPanel">
+      <summary>Setup bait points</summary>
+      <div class="panel-body">
       <form id="setupForm" class="stack">
         <label>Site name
           <input id="setupSiteName" name="siteName" required value="Demo Site" />
@@ -136,10 +145,12 @@
         <button class="btn" type="submit">Save monitoring points</button>
       </form>
       <p class="status" id="setupStatus">No monitoring points saved yet.</p>
-    </section>
+      </div>
+    </details>
 
-    <section class="panel" id="logPanel">
-      <h3>Log activity</h3>
+    <details class="panel collapsible" id="logPanel" open>
+      <summary>Log activity</summary>
+      <div class="panel-body">
       <form id="activityForm" class="stack">
         <label>Site name
           <input name="siteName" required value="Demo Site" />
@@ -177,10 +188,12 @@
         <button class="btn" type="submit">Submit activity log</button>
       </form>
       <p class="status" id="activityStatus">Not submitted yet.</p>
-    </section>
+      </div>
+    </details>
 
-    <section class="panel" id="checkPanel">
-      <h3>Monthly check (3-stage framework)</h3>
+    <details class="panel collapsible" id="checkPanel">
+      <summary>Monthly check (3-stage framework)</summary>
+      <div class="panel-body">
       <ul class="actions-list">
         <li><strong>Green:</strong> No signs. Continue non-toxic monitoring and prevention tasks.</li>
         <li><strong>Amber:</strong> Early signs. Increase checks and deploy amateur-use controls where suitable.</li>
@@ -194,18 +207,23 @@
           <li>Multiple insect sightings in one cycle</li>
         </ul>
       </details>
-    </section>
+      </div>
+    </details>
 
-    <section class="panel" id="recordsPanel">
-      <h3>Records (preview)</h3>
+    <details class="panel collapsible" id="recordsPanel">
+      <summary>Records (preview)</summary>
+      <div class="panel-body">
       <p class="micro">Clients will be able to search records by date, area, finding type and export audit-ready history.</p>
-    </section>
+      </div>
+    </details>
 
-    <section class="panel" id="helpPanel">
-      <h3>Need help now?</h3>
+    <details class="panel collapsible" id="helpPanel">
+      <summary>Need help now?</summary>
+      <div class="panel-body">
       <p class="micro">Urgent risk can trigger triage and professional escalation workflow automatically.</p>
       <p><strong>Call:</strong> <a href="tel:+441704213025">01704 213025</a> / <a href="tel:+441772356789">01772 356789</a></p>
-    </section>
+      </div>
+    </details>
   </div>
 
   <script>
@@ -243,7 +261,10 @@
     }
 
     function scrollToPanel(id){
-      document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
+      const panel = document.getElementById(id);
+      if (!panel) return;
+      if (panel.tagName === 'DETAILS') panel.open = true;
+      panel.scrollIntoView({behavior:'smooth', block:'start'});
     }
 
     function goPanel(id){
