@@ -19,8 +19,8 @@ footer{background:#0b1220;color:#e5e7eb;padding:24px 0}.foot{display:flex;justif
 .mobile-cta{display:none}
 @media (max-width: 900px){
   nav a:not(.btn-sm){display:none}
-  .nav{height:86px}
-  .logo{height:72px;max-width:420px}
+  .nav{height:108px}
+  .logo{height:96px;width:240px;max-width:none;object-fit:cover;object-position:center}
   .grid-2,.cards-3,.cards-4,.lead-form{grid-template-columns:1fr}
   .hero{padding:44px 0 30px}.hero h1{font-size:32px}
   .section{padding:40px 0}
