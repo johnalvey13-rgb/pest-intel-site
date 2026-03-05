@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" role="img" aria-label="Pest Intel logo">
+  <defs>
+    <style>
+      .line { fill: none; stroke: #0b0f19; stroke-linecap: square; stroke-linejoin: miter; }
+      .t { font: 700 86px 'Inter', 'Segoe UI', Arial, sans-serif; fill: #0b0f19; }
+    </style>
+  </defs>
+
+  <!-- Outer peaks -->
+  <path class="line" stroke-width="16" d="M70 118 L265 18 L410 152"/>
+  <path class="line" stroke-width="16" d="M410 152 L555 18 L750 118"/>
+
+  <!-- Mid peaks -->
+  <path class="line" stroke-width="16" d="M170 118 L265 68 L338 141"/>
+  <path class="line" stroke-width="16" d="M482 118 L555 68 L650 118"/>
+
+  <!-- Inner peaks -->
+  <path class="line" stroke-width="16" d="M250 118 L295 90 L338 118"/>
+  <path class="line" stroke-width="16" d="M482 118 L525 90 L570 118"/>
+
+  <text x="70" y="238" class="t">Pest Intel</text>
+</svg>
