@@ -19,6 +19,8 @@ Public:
 - `POST /api/activity` (client activity logging)
 - `POST /api/sites/setup` (site + monitoring points setup)
 - `GET /api/sites/:siteName/monitoring-points`
+- `POST /api/onboarding-assessment` (simple-language risk walkthrough)
+- `GET /api/onboarding-assessment/:siteName`
 
 Admin (`x-admin-key` required):
 - `GET /api/leads`
@@ -26,12 +28,14 @@ Admin (`x-admin-key` required):
 - `PATCH /api/triage/:id`
 - `GET /api/activity`
 - `GET /api/sites`
+- `GET /api/onboarding-assessments`
 - `GET /api/workflow-events`
 - `GET /api/dashboard/summary`
 
 ## Current automation
 - Site setup stores named monitoring points so repeat visits can reuse them.
 - Activity logs can reference monitoring points; unknown points are auto-added to that site.
+- Onboarding assessment returns staged risk output (green/amber/red) with action plan.
 - Activity logs auto-create triage cases when trigger findings are detected:
   - droppings
   - gnaw damage
@@ -39,7 +43,7 @@ Admin (`x-admin-key` required):
   - trap activation
   - multiple insect sightings
   - smear marks
-- Workflow events are recorded for lead/triage/activity/site actions.
+- Workflow events are recorded for lead/triage/activity/site/onboarding actions.
 
 ## Data storage
 JSON files in `backend/data/`:
@@ -47,6 +51,7 @@ JSON files in `backend/data/`:
 - `triage.json`
 - `activity.json`
 - `sites.json`
+- `onboarding-assessments.json`
 - `workflow-events.json`
 
 ## Next production step

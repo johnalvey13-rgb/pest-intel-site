@@ -19,6 +19,11 @@
     .stack input,.stack select,.stack textarea,.stack button{padding:12px;border:1px solid #d1d5db;border-radius:10px;font:inherit}
     .stack textarea{min-height:84px}
     .status{font-size:14px;padding:10px;border-radius:10px;background:#f3f4f6}
+    .chip{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+    .chip.green{background:#dcfce7;color:#166534}.chip.amber{background:#fef3c7;color:#92400e}.chip.red{background:#fee2e2;color:#991b1b}
+    .actions-list{margin:8px 0 0;padding-left:18px}.actions-list li{margin:6px 0}
+    details.learn{border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fff}
+    details.learn summary{cursor:pointer;font-weight:600}
     .easy .micro{font-size:15px}
     .easy h2,.easy h3{font-size:1.25rem}
     .easy .big-btn{font-size:18px}
@@ -27,24 +32,80 @@
   </style>
 </head>
 <body>
-  <div class="app-shell" id="appShell">
+  <div class="app-shell easy" id="appShell">
     <div class="app-head">
       <div>
         <h2 style="margin:0">Pest Intel Client Portal (Preview)</h2>
-        <p class="micro" style="margin:4px 0 0">Designed for quick logging by any staff member in under 30 seconds.</p>
+        <p class="micro" style="margin:4px 0 0">Simple by default for all teams. Detailed guidance is available when needed.</p>
       </div>
       <label class="mode-toggle">
-        <input id="easyMode" type="checkbox" />
-        Easy text mode
+        <input id="easyMode" type="checkbox" checked />
+        Simple mode
       </label>
     </div>
 
     <div class="big-actions">
+      <button class="big-btn" onclick="scrollToPanel('onboardingPanel')">Start site setup walkthrough<small>Identify risks before placing points</small></button>
       <button class="big-btn" onclick="scrollToPanel('setupPanel')">Setup monitoring points<small>Name all bait/trap/monitor points once</small></button>
       <button class="big-btn" onclick="scrollToPanel('logPanel')">Log activity<small>Photo + point + what was found</small></button>
       <button class="big-btn" onclick="scrollToPanel('checkPanel')">Run monthly check<small>Guided checklist with timestamps</small></button>
+      <button class="big-btn" onclick="scrollToPanel('helpPanel')">Need help now<small>Escalate to professional support</small></button>
       <button class="big-btn" onclick="scrollToPanel('recordsPanel')">View records<small>Find inspections, incidents, actions</small></button>
     </div>
+
+    <section class="panel" id="onboardingPanel">
+      <h3>Site setup walkthrough (simple language)</h3>
+      <p class="micro">This replaces technical terminology with plain checks so teams know what to watch and fix first.</p>
+      <form id="onboardingForm" class="stack">
+        <label>Site name
+          <input id="onboardingSiteName" name="siteName" required value="Demo Site" />
+        </label>
+        <label>How strong is proofing (gaps around doors, pipe entries, vents)?
+          <select name="proofing" required>
+            <option>good</option>
+            <option selected>ok</option>
+            <option>poor</option>
+          </select>
+        </label>
+        <label>How good is housekeeping (food/waste control)?
+          <select name="housekeeping" required>
+            <option>good</option>
+            <option selected>ok</option>
+            <option>poor</option>
+          </select>
+        </label>
+        <label>Drain/gully condition for rodent ingress risk
+          <select name="drainage" required>
+            <option>good</option>
+            <option selected>ok</option>
+            <option>poor</option>
+          </select>
+        </label>
+        <label>Harbourage / clutter level
+          <select name="clutter" required>
+            <option>low</option>
+            <option selected>medium</option>
+            <option>high</option>
+          </select>
+        </label>
+        <label>Team confidence with routine checks
+          <select name="staffChecks" required>
+            <option>good</option>
+            <option selected>ok</option>
+            <option>poor</option>
+          </select>
+        </label>
+        <label>Notes (optional)
+          <textarea name="notes" placeholder="Any known issues, recent sightings, high-risk areas"></textarea>
+        </label>
+        <button class="btn" type="submit">Generate setup plan</button>
+      </form>
+      <div class="status" id="onboardingStatus">No assessment yet.</div>
+      <details class="learn" style="margin-top:10px">
+        <summary>Why this matters (optional)</summary>
+        <p class="micro">The app follows an IPM approach: prevention first, then monitoring, then escalation when trigger evidence appears.</p>
+      </details>
+    </section>
 
     <section class="panel" id="setupPanel">
       <h3>Setup monitoring points</h3>
@@ -101,8 +162,20 @@
     </section>
 
     <section class="panel" id="checkPanel">
-      <h3>Monthly check (preview)</h3>
-      <p class="micro">In production this will be a simple guided checklist by monitoring point with required photo evidence.</p>
+      <h3>Monthly check (3-stage framework)</h3>
+      <ul class="actions-list">
+        <li><strong>Green:</strong> No signs. Continue non-toxic monitoring and prevention tasks.</li>
+        <li><strong>Amber:</strong> Early signs. Increase checks and deploy amateur-use controls where suitable.</li>
+        <li><strong>Red:</strong> Confirmed activity/risk triggers. Escalate to professional intervention.</li>
+      </ul>
+      <details class="learn" style="margin-top:10px">
+        <summary>Show trigger examples</summary>
+        <ul class="actions-list">
+          <li>Droppings, smear marks or fresh gnawing</li>
+          <li>Bait consumption / trap activations increasing</li>
+          <li>Multiple insect sightings in one cycle</li>
+        </ul>
+      </details>
     </section>
 
     <section class="panel" id="recordsPanel">
@@ -121,8 +194,10 @@
     const API_BASE = window.PEST_INTEL_API_BASE || '';
     const shell = document.getElementById('appShell');
     const setupForm = document.getElementById('setupForm');
+    const onboardingForm = document.getElementById('onboardingForm');
     const activityForm = document.getElementById('activityForm');
     const setupSiteName = document.getElementById('setupSiteName');
+    const onboardingSiteName = document.getElementById('onboardingSiteName');
     const activityPoint = document.getElementById('activityPoint');
 
     document.getElementById('easyMode').addEventListener('change', (e) => {
@@ -145,6 +220,14 @@
 
     function saveLocalPoints(siteName, points){
       localStorage.setItem(localKey(siteName), JSON.stringify(points));
+    }
+
+    function syncSiteName(siteName) {
+      const name = (siteName || '').trim();
+      if (!name) return;
+      setupSiteName.value = name;
+      onboardingSiteName.value = name;
+      activityForm.siteName.value = name;
     }
 
     function renderPointOptions(points = []) {
@@ -172,8 +255,71 @@
       } catch {}
     }
 
-    setupSiteName.addEventListener('change', () => loadPointsForSite(setupSiteName.value));
-    activityForm.siteName.addEventListener('change', () => loadPointsForSite(activityForm.siteName.value));
+    function renderOnboardingResult(item) {
+      const status = document.getElementById('onboardingStatus');
+      const stage = (item.stage || 'amber').toLowerCase();
+      status.innerHTML = `
+        <div><span class="chip ${stage}">${stage}</span> <strong>Risk stage</strong> (score ${item.riskScore ?? '-'})</div>
+        <ul class="actions-list">${(item.actions || []).map(a => `<li>${a}</li>`).join('')}</ul>
+      `;
+    }
+
+    function localAssessmentFromForm(form) {
+      const scoreMap = {
+        good: 0, yes: 0, low: 0,
+        ok: 1, some: 1, medium: 1,
+        poor: 2, no: 2, high: 2,
+      };
+      const values = [form.proofing, form.housekeeping, form.drainage, form.clutter, form.staffChecks]
+        .map(v => scoreMap[(v || 'ok').toLowerCase()] ?? 1);
+      const riskScore = values.reduce((a,b) => a+b, 0);
+      const stage = riskScore <= 3 ? 'green' : riskScore <= 7 ? 'amber' : 'red';
+      const actions = [];
+      if (stage === 'amber') actions.push('Deploy non-toxic monitoring now and review weekly.');
+      if (stage === 'red') actions.push('Escalate to professional intervention now.');
+      if ((scoreMap[(form.proofing || '').toLowerCase()] ?? 1) >= 1) actions.push('Improve proofing on doors, vents and service entries.');
+      if ((scoreMap[(form.housekeeping || '').toLowerCase()] ?? 1) >= 1) actions.push('Tighten food, waste and cleaning controls in risk zones.');
+      if ((scoreMap[(form.drainage || '').toLowerCase()] ?? 1) >= 1) actions.push('Check drains/gullies as likely ingress routes.');
+      if (!actions.length) actions.push('Maintain current controls and continue routine checks.');
+      return { stage, riskScore, actions };
+    }
+
+    setupSiteName.addEventListener('change', () => {
+      syncSiteName(setupSiteName.value);
+      loadPointsForSite(setupSiteName.value);
+    });
+    onboardingSiteName.addEventListener('change', () => {
+      syncSiteName(onboardingSiteName.value);
+      loadPointsForSite(onboardingSiteName.value);
+    });
+    activityForm.siteName.addEventListener('change', () => {
+      syncSiteName(activityForm.siteName.value);
+      loadPointsForSite(activityForm.siteName.value);
+    });
+
+    onboardingForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = Object.fromEntries(new FormData(onboardingForm).entries());
+      syncSiteName(form.siteName);
+
+      try {
+        if (!API_BASE) {
+          renderOnboardingResult(localAssessmentFromForm(form));
+          return;
+        }
+
+        const r = await fetch(`${API_BASE}/api/onboarding-assessment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Could not save assessment');
+        renderOnboardingResult(data.item || {});
+      } catch (err) {
+        document.getElementById('onboardingStatus').textContent = `Could not save assessment: ${err.message}`;
+      }
+    });
 
     setupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -186,12 +332,12 @@
         return;
       }
 
+      syncSiteName(siteName);
       saveLocalPoints(siteName, points);
       renderPointOptions(points);
 
       if (!API_BASE) {
         status.textContent = `Saved ${points.length} points for ${siteName} (preview mode).`;
-        activityForm.siteName.value = siteName;
         return;
       }
 
@@ -207,7 +353,6 @@
         saveLocalPoints(siteName, names);
         renderPointOptions(names);
         status.textContent = `Saved. ${data.pointsTotal} monitoring points now stored for ${siteName}.`;
-        activityForm.siteName.value = siteName;
       } catch (err) {
         status.textContent = `Could not save setup: ${err.message}`;
       }
@@ -223,6 +368,7 @@
         if (!API_BASE) {
           status.textContent = 'Preview mode: captured successfully (API not configured on this page).';
           activityForm.reset();
+          syncSiteName(setupSiteName.value || 'Demo Site');
           return;
         }
 
@@ -238,12 +384,14 @@
           ? `Logged. Auto-triage case created (#${data.triageId}).`
           : 'Logged successfully.';
         activityForm.reset();
+        syncSiteName(setupSiteName.value || body.siteName);
         await loadPointsForSite(setupSiteName.value || body.siteName);
       } catch (err) {
         status.textContent = `Could not submit: ${err.message}`;
       }
     });
 
+    syncSiteName(setupSiteName.value);
     loadPointsForSite(setupSiteName.value);
   </script>
 </body>

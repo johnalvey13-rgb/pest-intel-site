@@ -13,6 +13,7 @@ const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 const TRIAGE_FILE = path.join(DATA_DIR, 'triage.json');
 const ACTIVITY_FILE = path.join(DATA_DIR, 'activity.json');
 const SITES_FILE = path.join(DATA_DIR, 'sites.json');
+const ONBOARDING_FILE = path.join(DATA_DIR, 'onboarding-assessments.json');
 const EVENTS_FILE = path.join(DATA_DIR, 'workflow-events.json');
 
 app.use(cors({ origin: ALLOWED_ORIGIN === '*' ? true : ALLOWED_ORIGIN }));
@@ -90,6 +91,34 @@ function upsertMonitoringPoint(siteName, pointName, type = 'general') {
   write(SITES_FILE, all);
   appendEvent('monitoring-point.created', { siteName: all[siteIdx].siteName, pointName: name, type });
   return point;
+}
+
+function scoreFromAnswer(answer = '') {
+  const val = answer.toString().toLowerCase().trim();
+  if (['good', 'yes', 'low', 'secure'].includes(val)) return 0;
+  if (['ok', 'some', 'medium', 'partial'].includes(val)) return 1;
+  if (['poor', 'no', 'high', 'weak'].includes(val)) return 2;
+  return 1;
+}
+
+function stageFromRisk(riskScore) {
+  if (riskScore <= 3) return 'green';
+  if (riskScore <= 7) return 'amber';
+  return 'red';
+}
+
+function generateActionPlan(answers = {}, stage = 'green') {
+  const actions = [];
+  if (scoreFromAnswer(answers.proofing) >= 1) actions.push('Improve proofing at entry points, doors, and service penetrations.');
+  if (scoreFromAnswer(answers.housekeeping) >= 1) actions.push('Tighten cleaning and waste routines around food prep/storage zones.');
+  if (scoreFromAnswer(answers.drainage) >= 1) actions.push('Inspect drains and gullies for access routes and defects.');
+  if (scoreFromAnswer(answers.clutter) >= 1) actions.push('Reduce clutter/harbourage in voids, external storage and back-of-house areas.');
+  if (scoreFromAnswer(answers.staffChecks) >= 1) actions.push('Set weekly staff checks for signs: droppings, smear marks, gnawing, bait take.');
+
+  if (!actions.length) actions.push('Maintain current controls and continue routine monitoring checks.');
+  if (stage === 'red') actions.unshift('Escalate to professional intervention now due to elevated site risk profile.');
+  if (stage === 'amber') actions.unshift('Deploy non-toxic monitoring immediately and review trends weekly.');
+  return actions.slice(0, 6);
 }
 
 function shouldEscalate(findingType = '', severity = '') {
@@ -222,6 +251,56 @@ app.get('/api/sites', requireAdmin, (_, res) => {
   res.json({ count: all.length, items: all.slice(-300).reverse() });
 });
 
+// Onboarding risk walkthrough (plain language ERA-style)
+app.post('/api/onboarding-assessment', (req, res) => {
+  const body = req.body || {};
+  if (!body.siteName) return res.status(400).json({ error: 'siteName is required' });
+
+  const site = getOrCreateSite(body.siteName);
+  const answers = {
+    proofing: body.proofing || 'ok',
+    housekeeping: body.housekeeping || 'ok',
+    drainage: body.drainage || 'ok',
+    clutter: body.clutter || 'ok',
+    staffChecks: body.staffChecks || 'ok',
+  };
+
+  const riskScore = Object.values(answers).reduce((sum, v) => sum + scoreFromAnswer(v), 0);
+  const stage = stageFromRisk(riskScore);
+  const actions = generateActionPlan(answers, stage);
+
+  const all = read(ONBOARDING_FILE);
+  const row = {
+    id: id(),
+    createdAt: now(),
+    siteId: site?.id || null,
+    siteName: body.siteName,
+    answers,
+    riskScore,
+    stage,
+    actions,
+    notes: body.notes || '',
+  };
+  all.push(row);
+  write(ONBOARDING_FILE, all);
+  appendEvent('onboarding.assessment_created', { siteName: row.siteName, stage: row.stage, riskScore: row.riskScore });
+
+  res.status(201).json({ ok: true, item: row });
+});
+
+app.get('/api/onboarding-assessment/:siteName', (req, res) => {
+  const siteName = decodeURIComponent(req.params.siteName || '');
+  const all = read(ONBOARDING_FILE).filter((x) => normalizeSiteName(x.siteName) === normalizeSiteName(siteName));
+  if (!all.length) return res.status(404).json({ error: 'no assessment found for site' });
+  const latest = all[all.length - 1];
+  res.json({ ok: true, item: latest, historyCount: all.length });
+});
+
+app.get('/api/onboarding-assessments', requireAdmin, (_, res) => {
+  const all = read(ONBOARDING_FILE);
+  res.json({ count: all.length, items: all.slice(-500).reverse() });
+});
+
 // Client activity logging (foundation for app workflow)
 app.post('/api/activity', (req, res) => {
   const body = req.body || {};
@@ -292,6 +371,7 @@ app.get('/api/dashboard/summary', requireAdmin, (_, res) => {
   const triage = read(TRIAGE_FILE);
   const activity = read(ACTIVITY_FILE);
   const sites = read(SITES_FILE);
+  const onboarding = read(ONBOARDING_FILE);
   const openTriage = triage.filter((x) => !['resolved', 'closed'].includes((x.status || '').toLowerCase()));
   res.json({
     leadsTotal: leads.length,
@@ -299,9 +379,11 @@ app.get('/api/dashboard/summary', requireAdmin, (_, res) => {
     triageOpen: openTriage.length,
     activityTotal: activity.length,
     sitesTotal: sites.length,
+    onboardingTotal: onboarding.length,
     latestLead: leads[leads.length - 1] || null,
     latestTriage: triage[triage.length - 1] || null,
     latestActivity: activity[activity.length - 1] || null,
+    latestOnboarding: onboarding[onboarding.length - 1] || null,
   });
 });
 
